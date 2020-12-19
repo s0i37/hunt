@@ -28,7 +28,6 @@ class User:
 class Host:
 	def __init__(self, ip):
 		self.ip = ip
-		self.users = []
 		self.admins = []
 
 def is_user_exists(users, user):
