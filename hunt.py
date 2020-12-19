@@ -102,9 +102,12 @@ def process(user):
 					if (target.ip, host.ip) in known_edges or target.ip == host.ip:
 						continue
 					known_edges.append((target.ip, host.ip))
-					graph.add_edge(pydot.Edge(host.ip, target.ip))
+					if host.ip in owneds:
+						graph.add_edge(pydot.Edge(host.ip, target.ip, color='blue'))
+						owneds.append(target.ip)
+					else:
+						graph.add_edge(pydot.Edge(host.ip, target.ip))
 					#graph.write_png('out.png')
-					graph.write_dot('out.dot')
 
 def read_domain_groups():
 	pass
@@ -151,7 +154,8 @@ with open(SESSIONS) as f:
 		line = f.readline().strip()
 		if not line:
 			if is_end:
-				sleep(1)
+				#sleep(1)
+				break
 			is_end = True
 		else:
 			is_end = False
@@ -161,5 +165,6 @@ with open(SESSIONS) as f:
 				user.ip = ip
 				process(user)
 
+graph.write_dot('out.dot')
 # eog out.png
 # xdot out.dot
