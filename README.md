@@ -1,7 +1,7 @@
 # hunt
 Finding paths to target hosts in Active Directory infrastructure
 
-This tool writes dynamical updated graph in dot-file.
+This tool writes graph in dot-file.
 
 ## Specify targets
 
@@ -54,6 +54,14 @@ echo users1_admin >> admins.txt
 echo users2_admin >> admins.txt
 echo users3_admin >> admins.txt
 ```
+### Specify owned hosts (optional)
+
+If target chain contains owned hosts path will be highlighted blue
+
+```
+echo 10.10.0.1 >> owneds.txt
+echo 10.10.0.2 >> owneds.txt
+```
 
 ## Hunting
 
@@ -62,3 +70,5 @@ echo users3_admin >> admins.txt
 See results:
 
 `xdot out.dot`
+
+![demo](img/1.png)
