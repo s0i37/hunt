@@ -34,18 +34,27 @@ netview.py corp.org/username -target dc2 >> sessions.txt &
 
 Obtaining all windows hosts which consists in domain using LDAP-query:
 
-`(objectClass=computer)`
+`ldapsearch -E pr=10000/noprompt -D user@corp.org -w 'password' -x -H ldap://dc1 -b DC=corp,DC=org '(objectClass=computer)' cn > /tmp/hosts.txt`
 
 For each windows hosts:
 
 ```
-for ip in $(cat hosts.txt)
+for ip in $(cat /tmp/hosts.txt)
 do 
 echo $ip
 net rpc group members Администраторы -U 'corp/username%password' -I $ip
 net rpc group members Administrators -U 'corp/username%password' -I $ip
 done > local_admins.txt
 ```
+
+### Getting Active-Directory groups
+
+Obtaining domain users and groups information:
+
+`ldapsearch -E pr=10000/noprompt -D user@corp.org -w 'password' -x -H ldap://dc1 -b DC=corp,DC=org '(objectClass=group)' objectClass cn member >> ldap.ldif`
+
+`ldapsearch -E pr=10000/noprompt -D user@corp.org -w 'password' -x -H ldap://dc1 -b DC=corp,DC=org '(&(objectClass=user)(!(objectClass=computer)))' objectClass sAMAccountName >> ldap.ldif`
+
 ### Specify domain admins:
 
 Each domain admin user or users who have initial access to target hosts:

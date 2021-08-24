@@ -2,21 +2,21 @@
 from time import sleep
 from re import match
 import pydot
+import ldif
 
 SESSIONS = "sessions.txt"
 TARGETS = "targets.txt"
 ADMINS = "admins.txt"
 LOCAL_ADMINS = "local_admins.txt"
-#GROUPS = "groups.txt"
-DOMAIN = "CORP"
+LDAP = "ldap.ldif"
 OWNED = "owneds.txt"
+DOMAIN = "CORP"
 
 targets = []
 admins = []
 owneds = []
 hosts = []
 users = []
-domain_groups = {}
 graph = pydot.Dot(graph_type='digraph')
 
 class User:
@@ -60,8 +60,17 @@ def create_host(ip):
 		hosts.append(host)
 	return host
 
-def get_users_by_group(grouname):
-	return domain_groups.get(grouname, [grouname])
+def get_users_by_group(groupname):
+	users = []
+	if groupname in ldif.groups:
+		for user_dn in ldif.groups[groupname].get("member"):
+			for dn in ldif.users.keys():
+				if user_dn == dn:
+					users.append(ldif.users[user_dn].get('sAMAccountName'))
+					break
+	else:
+		users.append(groupname)
+	return users
 
 def parse_session(line):
 	ip = None
@@ -108,9 +117,7 @@ def process(user):
 						graph.add_edge(pydot.Edge(host.ip, target.ip))
 					#graph.write_png('out.png')
 
-def read_domain_groups():
-	pass
-	#domain_groups[groupname] = users
+ldif.parse(LDAP)
 
 with open(TARGETS) as f:
 	for line in f.read().split('\n'):
@@ -143,6 +150,11 @@ with open(LOCAL_ADMINS) as f:
 			if host and line:
 				domain,username = line.split('\\')
 				if domain.lower() == DOMAIN.lower():
+					for user in get_users_by_group(groupname=username):
+						user = create_user(username)
+						user.access.append(host)
+						host.admins.append(user)
+				else:
 					user = create_user(username)
 					user.access.append(host)
 					host.admins.append(user)
