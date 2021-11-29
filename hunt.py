@@ -15,6 +15,7 @@ DOMAIN = "CORP"
 targets = []
 admins = []
 owneds = []
+owneds_need = []
 hosts = []
 users = []
 graph = pydot.Dot(graph_type='digraph')
@@ -102,6 +103,8 @@ def process(user):
 					admins.append(new_user)
 			if host.ip in owneds:
 				graph.add_node(pydot.Node(host.ip, label=host.name, style="filled", fillcolor="red"))
+			elif host.ip in owneds_need:
+				graph.add_node(pydot.Node(host.ip, label=host.name, style="filled", fillcolor="blue"))
 			else:
 				graph.add_node(pydot.Node(host.ip, label=host.name))
 			print "[+] {ip} {user}".format(ip=user.ip, user=user.name)
@@ -110,12 +113,11 @@ def process(user):
 					if (target.ip, host.ip) in known_edges or target.ip == host.ip:
 						continue
 					known_edges.append((target.ip, host.ip))
-					if host.ip in owneds:
+					if host.ip in owneds + owneds_need:
 						graph.add_edge(pydot.Edge(host.ip, target.ip, color='blue'))
-						owneds.append(target.ip)
+						owneds_need.append(target.ip)
 					else:
 						graph.add_edge(pydot.Edge(host.ip, target.ip))
-					#graph.write_png('out.png')
 
 ldif.parse(LDAP)
 
@@ -148,16 +150,19 @@ with open(LOCAL_ADMINS) as f:
 			host = create_host(ip=line)
 		else:
 			if host and line:
-				domain,username = line.split('\\')
-				if domain.lower() == DOMAIN.lower():
-					for user in get_users_by_group(groupname=username):
+				try:
+					domain,username = line.split('\\')
+					if domain.lower() == DOMAIN.lower():
+						for user in get_users_by_group(groupname=username):
+							user = create_user(username)
+							user.access.append(host)
+							host.admins.append(user)
+					else:
 						user = create_user(username)
 						user.access.append(host)
 						host.admins.append(user)
-				else:
-					user = create_user(username)
-					user.access.append(host)
-					host.admins.append(user)
+				except:
+					print "[!] " + line
 
 with open(SESSIONS) as f:
 	is_end = False
@@ -179,3 +184,30 @@ with open(SESSIONS) as f:
 graph.write_dot('out.dot')
 # eog out.png
 # xdot out.dot
+
+def text_print(graph):
+	graph.write_plain("/tmp/graph.txt")
+	graph = open("/tmp/graph.txt").read().split("\n")
+	known_nodes = set()
+	def edges(graph, node):
+		nodes = []
+		for line in graph:
+			if line.startswith("edge") and node == line.split()[2].split('"')[1]:
+				nodes.append(line.split()[1].split('"')[1])
+		return nodes
+	def walk(graph, node, deep):
+		known_nodes.add(node)
+		for node in edges(graph, node):
+			print((" "*deep) + "`"+ node)
+			if not node in known:
+				known.add(node)
+				walk(graph, node, deep+1)
+			known_nodes.add(node)	
+	for line in graph:
+		if line.startswith("node"):
+			node = line.split()[1].split('"')[1]
+			if not node in known_nodes:
+				print(node)
+				known = set()
+				walk(graph, node, 1)
+text_print(graph)

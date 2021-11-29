@@ -42,8 +42,8 @@ For each windows hosts:
 for ip in $(cat /tmp/hosts.txt)
 do 
 echo $ip
-net rpc group members Администраторы -U 'corp/username%password' -I $ip
-net rpc group members Administrators -U 'corp/username%password' -I $ip
+net rpc group members Администраторы -U 'corp/username%password' -I $ip 2> /dev/null
+net rpc group members Administrators -U 'corp/username%password' -I $ip 2> /dev/null
 done > local_admins.txt
 ```
 
